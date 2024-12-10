@@ -72,6 +72,39 @@ func UpdateExample(l *slog.Logger) {
 	l.Info(fmt.Sprintf("Item with ID %d was updated. %d rows were affected", lastInsertedID, rowsAffected))
 }
 
+// HandleMultipleConnectionsExample shows how to handle multiple connections to different databases
+func HandleMultipleConnectionsExample(l *slog.Logger) {
+	type Connections struct {
+		DatabaseA *MySQL.Database
+		DatabaseB *MySQL.Database
+	}
+	conns := Connections{}
+	MySQL.New("testA", l)
+	conns.DatabaseA = MySQL.DB
+	MySQL.New("testB", l)
+	conns.DatabaseB = MySQL.DB
+
+	type ExampleSelect struct {
+		Id      int       `db:"column=id primarykey=yes table=Users"`
+		Name    string    `db:"column=name"`
+		Dtadded time.Time `db:"column=dtadded"`
+	}
+
+	result, err := MySQL.QuerySingleStructV2[ExampleSelect](conns.DatabaseA, "SELECT * FROM Users WHERE id=?", 5)
+	if err != nil {
+		return
+	}
+	l.Info(fmt.Sprintf("Result: %+v", result))
+
+	results, err := MySQL.QueryStructV2[ExampleSelect](conns.DatabaseB, "SELECT * FROM Users")
+	if err != nil {
+		return
+	}
+	for _, r := range results {
+		l.Info(fmt.Sprintf("Result: %+v\n", r))
+	}
+}
+
 func main() {
 
 	DSN := ""
